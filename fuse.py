@@ -70,11 +70,9 @@ class Operations(llfuse.Operations):
     def readlink(self, inode):
         print("Operations: readlink")
         return self.manager.readlink(inode)
-    
     def opendir(self, inode):
         print("Operations: opendir ", inode)
         return self.manager.opendir(inode)
-
     def readdir(self, inode, off):
         print("Operations: readdir inode=", inode, ", off=", off)
         if off == 0:
@@ -92,56 +90,45 @@ class Operations(llfuse.Operations):
     def open(self, inode, flags):
         print("Operations: open")
         return self.manager.open(inode, flags)
-
     def read(self, fh, offset, length):
         print("Operations: read fh=", fh)
         return self.manager.read(fh, offset, length)
-                
     def write(self, fh, offset, buf):
         print("Operations: write fh=", fh)
-        data = 'sadfsd'
-        if data is None:
-            data = ''
-        data = data[:offset] + buf + data[offset+len(buf):]
-        
-        return len(buf)
-   
+        return self.manager.write(fh, offset, buf)
     def release(self, fh):
         print("Operations: release fh=", fh)
         return self.manager.release(fh)
 
     def mkdir(self, inode_p, name, mode, ctx):
         print("Operations: mkdir")
-        self.manager.mkdir(inode_p, name, mode)
+        try:
+            self.manager.mkdir(inode_p, name, mode)
+        except OSError, e:
+            raise llfuse.FUSEError(errno.ENOTDIR)
         return self.lookup(inode_p, name)
+    def rmdir(self, inode_p, name):
+        print("Operations: rmdir")
+        entry = self.lookup(inode_p, name)
+        if not stat.S_ISDIR(entry.st_mode):
+            raise llfuse.FUSEError(errno.ENOTDIR)
+        try:
+            self.manager.rmdir(inode_p, name)
+        except OSError, e:
+            raise llfuse.FUSEError(errno.ENOTDIR)
+
+
 
     def create(self, inode_parent, name, mode, flags, ctx):
-        print("create")
-        entry = self._create(inode_parent, name, mode, ctx)
-        return (entry.st_ino, entry)
-
-
-
-
-
-
-
-
+        print("Operations: create")
+        fh = self.manager.create(inode_parent, name, mode, flags)
+        return (fh, self.lookup(inode_parent, name))
     def unlink(self, inode_p, name):
         print("Operations: unlink")
         entry = self.lookup(inode_p, name)
 
         if stat.S_ISDIR(entry.st_mode):
             raise llfuse.FUSEError(errno.EISDIR)
-
-        self._remove(inode_p, name, entry)
-
-    def rmdir(self, inode_p, name):
-        print("Operations: rmdir")
-        entry = self.lookup(inode_p, name)
-
-        if not stat.S_ISDIR(entry.st_mode):
-            raise llfuse.FUSEError(errno.ENOTDIR)
 
         self._remove(inode_p, name, entry)
 

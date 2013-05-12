@@ -51,7 +51,7 @@ class Manager():
     def write(self, fh, offset, buf):
         print("Manager: write")
         os.lseek(fh, offset, os.SEEK_SET)
-        return os.write(fh, buf, len(buf))
+        return os.write(fh, buf)
     def release(self, fh):
         print("Manager: release")
     	os.close(fh)
@@ -60,6 +60,15 @@ class Manager():
         print("Manager: mkdir")
         path = os.path.join(self.inodes[inode_p], name)
         os.mkdir(path, mode)
+    def rmdir(self, inode_p, name):
+        print("Manager: rmdir")
+        path = os.path.join(self.inodes[inode_p], name)
+        return os.rmdir(path)
+
+    def create(self, inode_parent, name, mode, flags):
+        print("Manager: create")
+        path = os.path.join(self.inodes[inode_parent], name)
+        return os.open(path, flags)
 
 
     def statfs(self):
@@ -105,7 +114,3 @@ class Manager():
         print("Manager: access")
         return True
 
-    def create(self, inode_parent, name, mode, flags, ctx):
-        print("Manager: create")
-        entry = self._create(inode_parent, name, mode, ctx)
-        return (entry.st_ino, entry)
