@@ -18,8 +18,8 @@ import llfuse
 import errno
 import stat
 from time import time
+from manager import Manager
 import logging
-import os
 from collections import defaultdict
 from llfuse import FUSEError
 
@@ -27,32 +27,26 @@ log = logging.getLogger()
 
 class Operations(llfuse.Operations):
     def __init__(self):      
-        self.inodes = {1: "/home/asd/src"}
-        print("__init__")
+        print("Operations: init")
+        self.manager = Manager();
         super(Operations, self).__init__()
-        print("__init__")
     def lookup(self, inode_p, name):
-        print("lookup inode=", inode_p, ", name=", name)
+        print("Operations: lookup inode=", inode_p, ", name=", name)
         if name == '.':
             inode = inode_p
         else:
-            path = os.path.join(self.inodes[inode_p], name)
-            print("lookup path=%s", path)
             try:
-                st = os.stat(path)
-                inode = st.st_ino
-                self.inodes[inode] = path
+                inode = self.manager.lookup(inode_p, name)
             except OSError, e:
                 if e.errno == errno.ENOENT:
-                    print('path does not exist or is a broken symlink', path)
+                    print('Manager: path does not exist or is a broken symlink')
                 raise(llfuse.FUSEError(errno.ENOENT))
         return self.getattr(inode)
     def getattr(self, inode):
-        path = self.inodes[inode]
-        print("getattr inode=", inode, ", path=", path)
+        print("Operations: getattr inode=", inode)
         entry = llfuse.EntryAttributes()
         try:
-            st = os.stat(path)
+            st = self.manager.getattr(inode)
             entry.st_ino = inode
             entry.generation = 0
             entry.entry_timeout = 0
@@ -70,23 +64,22 @@ class Operations(llfuse.Operations):
             entry.st_ctime = st.st_ctime
         except OSError, e:
             if e.errno == errno.ENOENT:
-                print('path %s does not exist or is a broken symlink', path)
+                print('Operations: path does not exist or is a broken symlink')
             raise(llfuse.FUSEError(errno.ENOENT))
         return entry
     def readlink(self, inode):
-        print("readlink")
+        print("Operations: readlink")
         return self.get_row('SELECT * FROM inodes WHERE id=?', (inode,))['target']
     
     def opendir(self, inode):
-        print("opendir ", inode)
+        print("Operations: opendir ", inode)
         return inode
 
     def readdir(self, inode, off):
-        path = self.inodes[inode]
-        print("readdir inode=", inode, ", path=", path, ", off=", off)
+        print("Operations: readdir inode=", inode, ", off=", off)
         if off == 0:
             off = -1
-        list = os.listdir(path)
+        list = self.manager.readdir(inode, off)
         for entry in list:
             off = off + 1
             if off > len(list):
@@ -95,10 +88,9 @@ class Operations(llfuse.Operations):
             attr = self.lookup(inode, entry)
             yield (entry, attr, attr.st_ino)
         off = 0
-        #raise(llfuse.FUSEError(errno.ENOENT))
 
     def unlink(self, inode_p, name):
-        print("unlink")
+        print("Operations: unlink")
         entry = self.lookup(inode_p, name)
 
         if stat.S_ISDIR(entry.st_mode):
@@ -107,7 +99,7 @@ class Operations(llfuse.Operations):
         self._remove(inode_p, name, entry)
 
     def rmdir(self, inode_p, name):
-        print("rmdir")
+        print("Operations: rmdir")
         entry = self.lookup(inode_p, name)
 
         if not stat.S_ISDIR(entry.st_mode):
