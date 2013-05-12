@@ -3,63 +3,49 @@ import os
 import sys
 import errno
 import stat
-import plugin_skelet
-from webdav import WebDav
+from plugin_skelet import PluginSkelet
 
-class Manager():
-    def __init__(self):
-        print("Manager: init")
-        self.plugins = [
-            WebDav("/home/asd/src"),
-            WebDav("/home/asd/Pictures"),
-        ]
-        self.root = "/home/asd/src"
+class WebDav(PluginSkelet):
+    def __init__(self, root):
+        print("Manager: init, root=", root)
+        super(WebDav, self).__init__()
+        self.root = root
         self.inodes = {1: self.root}
-        self.inode = 1;
+        self.saveInode(1, 1)
 
     def lookup(self, inode_p, name):
         print("Manager: lookup inode=", inode_p, ", name=", name)
-        inode = -1
-        for plugin in self.plugins:
-            try:
-                localInode = plugin.lookup(inode_p, name)
-                if inode < 0:
-                    inode = self.inode + 1;
-                plugin.saveInode(inode, localInode)
-            except OSError, e:
-                pass
-        if inode < 0:
-            raise OSError
-        self.inode = inode
+        if name == '.':
+            inode = inode_p
+        else:
+            path = os.path.join(self.inodes[inode_p], name)
+            print("Manager: lookup path=%s", path)
+            st = os.stat(path)
+            inode = st.st_ino
+            self.inodes[inode] = path
         return inode
     def getattr(self, inode):
-        print("Manager: getattr")
-        for plugin in self.plugins:
-            try:
-                return plugin.getattr(plugin.getLocalByGlobalInode(inode))
-            except OSError, e:
-                pass
-            except plugin_skelet.FileNotFoundError, e:
-                pass
-        raise(OSError)
+        path = self.inodes[inode]
+        print("Manager: getattr inode=", inode, ", path=", path)
+        try:
+            return os.stat(path)
+        except OSError, e:
+            if e.errno == errno.ENOENT:
+                print('Manager: path %s does not exist or is a broken symlink', path)
+            raise(llfuse.FUSEError(errno.ENOENT))
     def setattr(self, inode, attr):
-        print("Manager: setattr")
-        for plugin in self.plugins:
-            try:
-                return plugin.setattr(inode, attr)
-            except OSError, e:
-                pass
+        print("Manager: setattr=", attr.st_mode)
+        path = self.inodes[inode]
+        if attr.st_mode is not None:
+            os.chmod(path, attr.st_mode)
+        if attr.st_uid is not None and attr.st_gid is not None:
+            os.chown(path, attr.st_uid, attr.st_gid)
+        if attr.st_atime is not None and attr.st_mtime is not None:
+            os.utime(path, (attr.st_atime, attr.st_mtime))
     def readdir(self, inode, off):
-        print("Manager: readdir")
-        resultList = []
-        for plugin in self.plugins:
-            try:
-                resultList = resultList + plugin.readdir(plugin.getLocalByGlobalInode(inode), off)
-            except OSError, e:
-                pass
-            except plugin_skelet.FileNotFoundError, e:
-                pass
-        return resultList
+        path = self.inodes[inode]
+        print("Manager: readdir inode=", inode, ", path=", path, ", off=", off)
+        return os.listdir(path)
     def opendir(self, inode):
         print("Manager: opendir ", inode)
         return inode
