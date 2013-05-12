@@ -69,11 +69,11 @@ class Operations(llfuse.Operations):
         return entry
     def readlink(self, inode):
         print("Operations: readlink")
-        return self.get_row('SELECT * FROM inodes WHERE id=?', (inode,))['target']
+        return self.manager.readlink(inode)
     
     def opendir(self, inode):
         print("Operations: opendir ", inode)
-        return inode
+        return self.manager.opendir(inode)
 
     def readdir(self, inode, off):
         print("Operations: readdir inode=", inode, ", off=", off)
@@ -171,8 +171,8 @@ class Operations(llfuse.Operations):
         return stat_
 
     def open(self, inode, flags):
-        print("open")
-        return inode
+        print("Operations: open")
+        return self.manager.open(inode, flags)
 
     def access(self, inode, mode, ctx):
         print("access")
@@ -192,15 +192,11 @@ class Operations(llfuse.Operations):
 
 
     def read(self, fh, offset, length):
-        print("read")
-        data = "no data"
-        if data is None:
-            data = ''
-        return data[offset:offset+length]
-
+        print("Operations: read fh=", fh)
+        return self.manager.read(fh, offset, length)
                 
     def write(self, fh, offset, buf):
-        print("write")
+        print("Operations: write fh=", fh)
         data = 'sadfsd'
         if data is None:
             data = ''
@@ -209,7 +205,8 @@ class Operations(llfuse.Operations):
         return len(buf)
    
     def release(self, fh):
-        print("release")
+        print("Operations: release fh=", fh)
+        return self.manager.release(fh)
 
         
 if __name__ == '__main__':

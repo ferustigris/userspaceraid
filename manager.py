@@ -32,11 +32,85 @@ class Manager():
     def readdir(self, inode, off):
         path = self.inodes[inode]
         print("Manager: readdir inode=", inode, ", path=", path, ", off=", off)
-        list = os.listdir(path)
-        return list
+        return os.listdir(path)
     def readlink(self, inode):
         print("Manager: readlink")
-        return self.get_row('SELECT * FROM inodes WHERE id=?', (inode,))['target']    
+        return inode
     def opendir(self, inode):
         print("Manager: opendir ", inode)
         return inode
+    def unlink(self, inode_p, name):
+        print("Manager: unlink")
+
+    def symlink(self, inode_p, name, target, ctx):
+        print("Manager: symlink")
+
+    def rename(self, inode_p_old, name_old, inode_p_new, name_new):     
+        print("Manager: rename")
+
+    def link(self, inode, new_inode_p, new_name):
+        print("Manager: link")
+
+    def setattr(self, inode, attr):
+        print("Manager: setattr")
+
+    def mknod(self, inode_p, name, mode, rdev, ctx):
+        print("Manager: mknod")
+
+    def mkdir(self, inode_p, name, mode, ctx):
+        print("Manager: mkdir")
+
+    def statfs(self):
+        print("Manager: statfs")
+        stat_ = llfuse.StatvfsData()
+
+        stat_.f_bsize = 512
+        stat_.f_frsize = 512
+
+        size = 12
+        stat_.f_blocks = size // stat_.f_frsize
+        stat_.f_bfree = max(size // stat_.f_frsize, 1024)
+        stat_.f_bavail = stat_.f_bfree
+
+        inodes = 0
+        stat_.f_files = inodes
+        stat_.f_ffree = max(inodes , 100)
+        stat_.f_favail = stat_.f_ffree
+
+        return stat_
+
+    def open(self, inode, flags):
+        print("Manager: open")
+        path = self.inodes[inode]
+        fh = os.open(path, flags)
+        return fh
+
+    def access(self, inode, mode, ctx):
+        print("Manager: access")
+        return True
+
+    def create(self, inode_parent, name, mode, flags, ctx):
+        print("Manager: create")
+        entry = self._create(inode_parent, name, mode, ctx)
+        return (entry.st_ino, entry)
+
+    def read(self, fh, offset, length):
+        print("Manager: read")
+        os.lseek(fh, offset, os.SEEK_SET)
+        data = os.read(fh, length)
+        if data is None:
+            data = ''
+        return data
+                
+    def write(self, fh, offset, buf):
+        print("Manager: write")
+        data = 'sadfsd'
+        if data is None:
+            data = ''
+        data = data[:offset] + buf + data[offset+len(buf):]
+        
+        return len(buf)
+   
+    def release(self, fh):
+    	os.close(fh)
+        print("Manager: release")
