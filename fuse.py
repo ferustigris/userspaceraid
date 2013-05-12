@@ -27,44 +27,51 @@ log = logging.getLogger()
 
 class Operations(llfuse.Operations):
     def __init__(self):      
-        self.inode = 1
-        self.inodes = {1: ''}
+        self.inodes = {1: "/home/asd/src"}
         print("__init__")
         super(Operations, self).__init__()
         print("__init__")
     def lookup(self, inode_p, name):
-        print("lookup %s", name)
+        print("lookup inode=", inode_p, ", name=", name)
         if name == '.':
             inode = inode_p
         else:
-            inode = self.inode + 1
-            self.inode = inode
-            #path = self.inodes[inode_p] + "/" + name
-            #print("lookup path=%s", path)
-            #st = os.stat(path)
-            #name == '..':
-            #raise(llfuse.FUSEError(errno.ENOENT))
-        
+            path = os.path.join(self.inodes[inode_p], name)
+            print("lookup path=%s", path)
+            try:
+                st = os.stat(path)
+                inode = st.st_ino
+                self.inodes[inode] = path
+            except OSError, e:
+                if e.errno == errno.ENOENT:
+                    print('path does not exist or is a broken symlink', path)
+                raise(llfuse.FUSEError(errno.ENOENT))
         return self.getattr(inode)
     def getattr(self, inode):
-        print("getattr inode=", inode)
+        path = self.inodes[inode]
+        print("getattr inode=", inode, ", path=", path)
         entry = llfuse.EntryAttributes()
-        entry.st_ino = inode
-        entry.generation = 0
-        entry.entry_timeout = 300
-        entry.attr_timeout = 300
-        entry.st_mode = 040777
-        entry.st_nlink = 2
-        entry.st_uid = 0
-        entry.st_gid = 0
-        entry.st_rdev = 1
-        entry.st_size = 0
-
-        entry.st_blksize = 512
-        entry.st_blocks = 1
-        entry.st_atime = 0
-        entry.st_mtime = 0
-        entry.st_ctime = 0
+        try:
+            st = os.stat(path)
+            entry.st_ino = inode
+            entry.generation = 0
+            entry.entry_timeout = 0
+            entry.attr_timeout = 0
+            entry.st_mode = st.st_mode
+            entry.st_nlink = st.st_nlink
+            entry.st_uid = st.st_uid
+            entry.st_gid = st.st_gid
+            entry.st_rdev = st.st_rdev
+            entry.st_size = st.st_size
+            entry.st_blksize = st.st_blksize
+            entry.st_blocks = st.st_blocks
+            entry.st_atime = st.st_atime
+            entry.st_mtime = st.st_mtime
+            entry.st_ctime = st.st_ctime
+        except OSError, e:
+            if e.errno == errno.ENOENT:
+                print('path %s does not exist or is a broken symlink', path)
+            raise(llfuse.FUSEError(errno.ENOENT))
         return entry
     def readlink(self, inode):
         print("readlink")
@@ -75,13 +82,20 @@ class Operations(llfuse.Operations):
         return inode
 
     def readdir(self, inode, off):
-        print("readdir ", inode)
+        path = self.inodes[inode]
+        print("readdir inode=", inode, ", path=", path, ", off=", off)
         if off == 0:
             off = -1
-        for row in []:
-            print(row, self.inode)
-            self.inode = self.inode + 1
-            yield (row, self.getattr(self.inode), self.inode)
+        list = os.listdir(path)
+        for entry in list:
+            off = off + 1
+            if off > len(list):
+                off = 0
+                return
+            attr = self.lookup(inode, entry)
+            yield (entry, attr, attr.st_ino)
+        off = 0
+        #raise(llfuse.FUSEError(errno.ENOENT))
 
     def unlink(self, inode_p, name):
         print("unlink")
