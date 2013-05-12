@@ -33,32 +33,34 @@ class Manager():
         path = self.inodes[inode]
         print("Manager: readdir inode=", inode, ", path=", path, ", off=", off)
         return os.listdir(path)
-    def readlink(self, inode):
-        print("Manager: readlink")
-        return inode
     def opendir(self, inode):
         print("Manager: opendir ", inode)
         return inode
-    def unlink(self, inode_p, name):
-        print("Manager: unlink")
+    def open(self, inode, flags):
+        print("Manager: open")
+        path = self.inodes[inode]
+        fh = os.open(path, flags)
+        return fh
+    def read(self, fh, offset, length):
+        print("Manager: read")
+        os.lseek(fh, offset, os.SEEK_SET)
+        data = os.read(fh, length)
+        if data is None:
+            data = ''
+        return data              
+    def write(self, fh, offset, buf):
+        print("Manager: write")
+        os.lseek(fh, offset, os.SEEK_SET)
+        return os.write(fh, buf, len(buf))
+    def release(self, fh):
+        print("Manager: release")
+    	os.close(fh)
 
-    def symlink(self, inode_p, name, target, ctx):
-        print("Manager: symlink")
-
-    def rename(self, inode_p_old, name_old, inode_p_new, name_new):     
-        print("Manager: rename")
-
-    def link(self, inode, new_inode_p, new_name):
-        print("Manager: link")
-
-    def setattr(self, inode, attr):
-        print("Manager: setattr")
-
-    def mknod(self, inode_p, name, mode, rdev, ctx):
-        print("Manager: mknod")
-
-    def mkdir(self, inode_p, name, mode, ctx):
+    def mkdir(self, inode_p, name, mode):
         print("Manager: mkdir")
+        path = os.path.join(self.inodes[inode_p], name)
+        os.mkdir(path, mode)
+
 
     def statfs(self):
         print("Manager: statfs")
@@ -78,12 +80,26 @@ class Manager():
         stat_.f_favail = stat_.f_ffree
 
         return stat_
+    def readlink(self, inode):
+        print("Manager: readlink")
+        return inode
+    def unlink(self, inode_p, name):
+        print("Manager: unlink")
 
-    def open(self, inode, flags):
-        print("Manager: open")
-        path = self.inodes[inode]
-        fh = os.open(path, flags)
-        return fh
+    def symlink(self, inode_p, name, target, ctx):
+        print("Manager: symlink")
+
+    def rename(self, inode_p_old, name_old, inode_p_new, name_new):     
+        print("Manager: rename")
+
+    def link(self, inode, new_inode_p, new_name):
+        print("Manager: link")
+
+    def setattr(self, inode, attr):
+        print("Manager: setattr")
+
+    def mknod(self, inode_p, name, mode, rdev, ctx):
+        print("Manager: mknod")
 
     def access(self, inode, mode, ctx):
         print("Manager: access")
@@ -93,24 +109,3 @@ class Manager():
         print("Manager: create")
         entry = self._create(inode_parent, name, mode, ctx)
         return (entry.st_ino, entry)
-
-    def read(self, fh, offset, length):
-        print("Manager: read")
-        os.lseek(fh, offset, os.SEEK_SET)
-        data = os.read(fh, length)
-        if data is None:
-            data = ''
-        return data
-                
-    def write(self, fh, offset, buf):
-        print("Manager: write")
-        data = 'sadfsd'
-        if data is None:
-            data = ''
-        data = data[:offset] + buf + data[offset+len(buf):]
-        
-        return len(buf)
-   
-    def release(self, fh):
-    	os.close(fh)
-        print("Manager: release")

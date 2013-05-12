@@ -89,6 +89,44 @@ class Operations(llfuse.Operations):
             yield (entry, attr, attr.st_ino)
         off = 0
 
+    def open(self, inode, flags):
+        print("Operations: open")
+        return self.manager.open(inode, flags)
+
+    def read(self, fh, offset, length):
+        print("Operations: read fh=", fh)
+        return self.manager.read(fh, offset, length)
+                
+    def write(self, fh, offset, buf):
+        print("Operations: write fh=", fh)
+        data = 'sadfsd'
+        if data is None:
+            data = ''
+        data = data[:offset] + buf + data[offset+len(buf):]
+        
+        return len(buf)
+   
+    def release(self, fh):
+        print("Operations: release fh=", fh)
+        return self.manager.release(fh)
+
+    def mkdir(self, inode_p, name, mode, ctx):
+        print("Operations: mkdir")
+        self.manager.mkdir(inode_p, name, mode)
+        return self.lookup(inode_p, name)
+
+    def create(self, inode_parent, name, mode, flags, ctx):
+        print("create")
+        entry = self._create(inode_parent, name, mode, ctx)
+        return (entry.st_ino, entry)
+
+
+
+
+
+
+
+
     def unlink(self, inode_p, name):
         print("Operations: unlink")
         entry = self.lookup(inode_p, name)
@@ -147,10 +185,6 @@ class Operations(llfuse.Operations):
         print("mknod")
         return self._create(inode_p, name, mode, ctx, rdev=rdev)
 
-    def mkdir(self, inode_p, name, mode, ctx):
-        print("mkdir")
-        return self._create(inode_p, name, mode, ctx)
-
     def statfs(self):
         print("statfs")
         stat_ = llfuse.StatvfsData()
@@ -170,18 +204,9 @@ class Operations(llfuse.Operations):
 
         return stat_
 
-    def open(self, inode, flags):
-        print("Operations: open")
-        return self.manager.open(inode, flags)
-
     def access(self, inode, mode, ctx):
         print("access")
         return True
-
-    def create(self, inode_parent, name, mode, flags, ctx):
-        print("create")
-        entry = self._create(inode_parent, name, mode, ctx)
-        return (entry.st_ino, entry)
 
     def _create(self, inode_p, name, mode, ctx, rdev=0, target=None):             
         print("_create")
@@ -189,24 +214,6 @@ class Operations(llfuse.Operations):
             raise FUSEError(errno.EINVAL)
 
         return self.getattr(inode)
-
-
-    def read(self, fh, offset, length):
-        print("Operations: read fh=", fh)
-        return self.manager.read(fh, offset, length)
-                
-    def write(self, fh, offset, buf):
-        print("Operations: write fh=", fh)
-        data = 'sadfsd'
-        if data is None:
-            data = ''
-        data = data[:offset] + buf + data[offset+len(buf):]
-        
-        return len(buf)
-   
-    def release(self, fh):
-        print("Operations: release fh=", fh)
-        return self.manager.release(fh)
 
         
 if __name__ == '__main__':
