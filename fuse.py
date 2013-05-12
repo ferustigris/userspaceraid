@@ -67,6 +67,10 @@ class Operations(llfuse.Operations):
                 print('Operations: path does not exist or is a broken symlink')
             raise(llfuse.FUSEError(errno.ENOENT))
         return entry
+    def setattr(self, inode, attr):
+        print("Operations: setattr")
+        self.manager.setattr(inode, attr)
+        return self.getattr(inode)
     def readlink(self, inode):
         print("Operations: readlink")
         return self.manager.readlink(inode)
@@ -117,8 +121,6 @@ class Operations(llfuse.Operations):
         except OSError, e:
             raise llfuse.FUSEError(errno.ENOTDIR)
 
-
-
     def create(self, inode_parent, name, mode, flags, ctx):
         print("Operations: create")
         fh = self.manager.create(inode_parent, name, mode, flags)
@@ -126,81 +128,57 @@ class Operations(llfuse.Operations):
     def unlink(self, inode_p, name):
         print("Operations: unlink")
         entry = self.lookup(inode_p, name)
-
         if stat.S_ISDIR(entry.st_mode):
             raise llfuse.FUSEError(errno.EISDIR)
+        self.manager.unlink(entry.st_ino)
+    def rename(self, inode_p_old, name_old, inode_p_new, name_new):     
+        print("Operations: rename")
+        entry_old = self.lookup(inode_p_old, name_old)
+        try:
+            entry_new = self.lookup(inode_p_new, name_new)
+        except llfuse.FUSEError as exc:
+            target_exists = False
+        else:
+            target_exists = True
+            raise FUSEError(errno.EINVAL)
+        self.manager.rename(inode_p_old, name_old, inode_p_new, name_new)
 
-        self._remove(inode_p, name, entry)
+    def statfs(self):
+        print("Operations: statfs")
+        stat_ = llfuse.StatvfsData()
+        st = self.manager.statfs()
 
-    def _remove(self, inode_p, name, entry):
-        print("_remove")
+        stat_.f_bsize = st.f_bsize
+        stat_.f_frsize = st.f_frsize
+
+        stat_.f_blocks = st.f_blocks
+        stat_.f_bfree = st.f_bfree
+        stat_.f_bavail = st.f_bavail
+
+        stat_.f_files = st.f_files
+        stat_.f_ffree = st.f_ffree
+        stat_.f_favail = st.f_favail
+        return stat_
 
     def symlink(self, inode_p, name, target, ctx):
-        print("symlink")
+        print("Operations: symlink")
         mode = (stat.S_IFLNK | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | 
                 stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | 
                 stat.S_IROTH | stat.S_IWOTH | stat.S_IXOTH)
         return self._create(inode_p, name, mode, ctx, target=target)
-
-    def rename(self, inode_p_old, name_old, inode_p_new, name_new):     
-        print("rename")
-        entry_old = self.lookup(inode_p_old, name_old)
-
-        try:
-            entry_new = self.lookup(inode_p_new, name_new)
-        except llfuse.FUSEError as exc:
-            if exc.errno != errno.ENOENT:
-                raise
-            target_exists = False
-        else:
-            target_exists = True
-
-
     def link(self, inode, new_inode_p, new_name):
-        print("link")
+        print("Operations: link")
         entry_p = self.getattr(new_inode_p)
         if entry_p.st_nlink == 0:
             raise FUSEError(errno.EINVAL)
 
         return self.getattr(inode)
-
-    def setattr(self, inode, attr):
-        print("setattr")
-        return self.getattr(inode)
-
     def mknod(self, inode_p, name, mode, rdev, ctx):
-        print("mknod")
+        print("Operations: mknod")
         return self._create(inode_p, name, mode, ctx, rdev=rdev)
-
-    def statfs(self):
-        print("statfs")
-        stat_ = llfuse.StatvfsData()
-
-        stat_.f_bsize = 512
-        stat_.f_frsize = 512
-
-        size = 12
-        stat_.f_blocks = size // stat_.f_frsize
-        stat_.f_bfree = max(size // stat_.f_frsize, 1024)
-        stat_.f_bavail = stat_.f_bfree
-
-        inodes = 0
-        stat_.f_files = inodes
-        stat_.f_ffree = max(inodes , 100)
-        stat_.f_favail = stat_.f_ffree
-
-        return stat_
-
     def access(self, inode, mode, ctx):
-        print("access")
+        print("Operations: access")
         return True
-
-    def _create(self, inode_p, name, mode, ctx, rdev=0, target=None):             
-        print("_create")
-        if self.getattr(inode_p).st_nlink == 0:
-            raise FUSEError(errno.EINVAL)
-
-        return self.getattr(inode)
 
         
 if __name__ == '__main__':
