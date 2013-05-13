@@ -87,7 +87,7 @@ class WebDav(PluginSkelet):
 
     def create(self, inode_parent, name, mode, flags):
         print("WebDav: create")
-        path = os.path.join(self.inodes[inode_parent], name)
+        path = os.path.join(self.getPathByInode(inode_parent), name)
         return os.open(path, flags)
     def unlink(self, inode):
         print("WebDav: unlink")
@@ -95,8 +95,8 @@ class WebDav(PluginSkelet):
         os.unlink(path)
     def rename(self, inode_p_old, name_old, inode_p_new, name_new):     
         print("WebDav: rename")
-        oldpath = os.path.join(self.inodes[inode_p_old], name_old)
-        newpath = os.path.join(self.inodes[inode_p_new], name_new)
+        oldpath = os.path.join(self.getPathByInode(inode_p_old), name_old)
+        newpath = os.path.join(self.getPathByInode(inode_p_new), name_new)
         os.rename(oldpath, newpath)
         inode = self.lookup(inode_p_new, name_new)
         self.inodes[inode] = newpath

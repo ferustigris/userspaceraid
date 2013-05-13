@@ -66,8 +66,7 @@ class Manager():
                 pass
             except plugin_skelet.FileNotFoundError, e:
                 pass
-        print "resultList", resultList
-        return resultList
+        return list(set(resultList))
     def opendir(self, inode):
         print("Manager: opendir ", inode)
         return inode
@@ -121,32 +120,95 @@ class Manager():
 
     def mkdir(self, inode_p, name, mode):
         print("Manager: mkdir")
-        path = os.path.join(self.inodes[inode_p], name)
-        os.mkdir(path, mode)
+        for plugin in self.plugins:
+            try:
+                lInode_p = plugin.getLocalByGlobalInode(inode_p)
+                plugin.mkdir(lInode_p, name, mode)
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
     def rmdir(self, inode_p, name):
         print("Manager: rmdir")
-        path = os.path.join(self.inodes[inode_p], name)
-        return os.rmdir(path)
+        for plugin in self.plugins:
+            try:
+                lInode_p = plugin.getLocalByGlobalInode(inode_p)
+                plugin.rmdir(lInode_p, name)
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
 
     def create(self, inode_parent, name, mode, flags):
         print("Manager: create")
-        path = os.path.join(self.inodes[inode_parent], name)
-        return os.open(path, flags)
+        exist = False
+        for plugin in self.plugins:
+            try:
+                plugin.lookup(inode_parent, name)
+                exist = True
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
+        if exist:
+            raise(OSError)
+        for plugin in self.plugins:
+            try:
+                lInode_p = plugin.getLocalByGlobalInode(inode_parent)
+                return plugin.create(lInode_p, name, mode, flags)
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
+        raise(OSError)
+
     def unlink(self, inode):
         print("Manager: unlink")
-        path = self.inodes[inode]
-        os.unlink(path)
+        for plugin in self.plugins:
+            try:
+                lInode = plugin.getLocalByGlobalInode(inode)
+                plugin.unlink(lInode)
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
     def rename(self, inode_p_old, name_old, inode_p_new, name_new):     
         print("Manager: rename")
-        oldpath = os.path.join(self.inodes[inode_p_old], name_old)
-        newpath = os.path.join(self.inodes[inode_p_new], name_new)
-        os.rename(oldpath, newpath)
-        inode = self.lookup(inode_p_new, name_new)
-        self.inodes[inode] = newpath
-
+        for plugin in self.plugins:
+            try:
+                lInodeOld_p = plugin.getLocalByGlobalInode(inode_p_old)
+                lInodeNew_p = plugin.getLocalByGlobalInode(inode_p_new)
+                plugin.rename(lInodeOld_p, name_old, lInodeNew_p, name_new)
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
     def statfs(self):
         print("Manager: statfs")
-        stat = os.statvfs(self.root)
+        class Employee:
+            pass
+        stat = None
+        for plugin in self.plugins:
+                st = plugin.statfs()
+                if stat is None:
+                    stat = Employee()
+                    stat.f_bsize = st.f_bsize
+                    stat.f_frsize = st.f_frsize
+
+                    stat.f_blocks = st.f_blocks
+                    stat.f_bfree = st.f_bfree
+                    stat.f_bavail = st.f_bavail
+
+                    stat.f_files = st.f_files
+                    stat.f_ffree = st.f_ffree
+                    stat.f_favail = st.f_favail
+                else:
+                    stat.f_blocks = stat.f_blocks + st.f_blocks
+                    stat.f_bfree = stat.f_bfree + st.f_bfree
+                    stat.f_files = stat.f_files + st.f_files
+                    stat.f_ffree = stat.f_ffree + st.f_ffree
+                    stat.f_favail = stat.f_favail + st.f_favail
+                    stat.f_bavail = stat.f_bavail + st.f_bavail
         return stat
 
     def readlink(self, inode):
