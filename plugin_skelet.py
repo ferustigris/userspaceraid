@@ -13,6 +13,7 @@ class PluginSkelet(object):
     def __init__(self):
         print("PluginSkelet: init")
         self.inodesMap = {}
+        self.fhMap = {}
 
     def saveInode(self, globalInode, localInode):
         self.inodesMap[globalInode] = localInode
@@ -20,6 +21,13 @@ class PluginSkelet(object):
         if not globalInode in self.inodesMap:
             raise FileNotFoundError
         return self.inodesMap[globalInode]
+
+    def saveFh(self, globalFh, localFh):
+        self.fhMap[globalFh] = localFh
+    def getLocalByGlobalFh(self, globalFh):
+        if not globalFh in self.fhMap:
+            raise FileNotFoundError
+        return self.fhMap[globalFh]
 
     @abstractmethod
     def lookup(self, inode_p, name):

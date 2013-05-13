@@ -16,17 +16,21 @@ class Manager():
         self.root = "/home/asd/src"
         self.inodes = {1: self.root}
         self.inode = 1;
+        self.fh = 1;
 
     def lookup(self, inode_p, name):
         print("Manager: lookup inode=", inode_p, ", name=", name)
         inode = -1
         for plugin in self.plugins:
             try:
-                localInode = plugin.lookup(inode_p, name)
+                lInode_p = plugin.getLocalByGlobalInode(inode_p)
+                localInode = plugin.lookup(lInode_p, name)
                 if inode < 0:
                     inode = self.inode + 1;
                 plugin.saveInode(inode, localInode)
             except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
                 pass
         if inode < 0:
             raise OSError
@@ -49,39 +53,71 @@ class Manager():
                 return plugin.setattr(inode, attr)
             except OSError, e:
                 pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
     def readdir(self, inode, off):
         print("Manager: readdir")
         resultList = []
         for plugin in self.plugins:
             try:
-                resultList = resultList + plugin.readdir(plugin.getLocalByGlobalInode(inode), off)
+                lInode = plugin.getLocalByGlobalInode(inode)
+                resultList = resultList + plugin.readdir(lInode, off)
             except OSError, e:
                 pass
             except plugin_skelet.FileNotFoundError, e:
                 pass
+        print "resultList", resultList
         return resultList
     def opendir(self, inode):
         print("Manager: opendir ", inode)
         return inode
     def open(self, inode, flags):
         print("Manager: open")
-        path = self.inodes[inode]
-        fh = os.open(path, flags)
-        return fh
+        for plugin in self.plugins:
+            try:
+                lInode = plugin.getLocalByGlobalInode(inode)
+                fh = plugin.open(lInode, flags)
+                self.fh = self.fh + 1
+                plugin.saveFh(self.fh, fh)
+                return self.fh
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
+        raise(OSError)
     def read(self, fh, offset, length):
         print("Manager: read")
-        os.lseek(fh, offset, os.SEEK_SET)
-        data = os.read(fh, length)
-        if data is None:
-            data = ''
+        data = ''
+        for plugin in self.plugins:
+            try:
+                lfh = plugin.getLocalByGlobalFh(fh)
+                data = plugin.read(lfh, offset, length)
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
         return data              
     def write(self, fh, offset, buf):
         print("Manager: write")
-        os.lseek(fh, offset, os.SEEK_SET)
-        return os.write(fh, buf)
+        for plugin in self.plugins:
+            try:
+                lfh = plugin.getLocalByGlobalFh(fh)
+                return plugin.write(lfh, offset, buf)
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
+        raise(OSError)
     def release(self, fh):
         print("Manager: release")
-    	os.close(fh)
+        for plugin in self.plugins:
+            try:
+                lfh = plugin.getLocalByGlobalFh(fh)
+                plugin.release(lfh)
+            except OSError, e:
+                pass
+            except plugin_skelet.FileNotFoundError, e:
+                pass
 
     def mkdir(self, inode_p, name, mode):
         print("Manager: mkdir")
