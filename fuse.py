@@ -4,16 +4,6 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import sys
-
-# We are running from the llfuse source directory, make sure
-# that we use modules from this directory
-basedir = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), '..'))
-
-if (os.path.exists(os.path.join(basedir, 'setup.py')) and
-    os.path.exists(os.path.join(basedir, 'src', 'llfuse.pyx'))):
-    sys.path = [os.path.join(basedir, 'src')] + sys.path
-    
-    
 import llfuse
 import errno
 import stat

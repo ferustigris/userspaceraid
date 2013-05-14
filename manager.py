@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 import os
-import sys
-import errno
 import stat
 import abstract_backend
 from posix_backend import PosixBackend
