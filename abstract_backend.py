@@ -9,9 +9,9 @@ class FileNotFoundError:
     def __str__(self):
         return 'File not found'
 
-class PluginSkelet(object):
+class AbstractBackend(object):
     def __init__(self):
-        print("PluginSkelet: init")
+        print("AbstractBackend: init")
         self.inodesMap = {}
         self.fhMap = {}
 

@@ -3,15 +3,15 @@ import os
 import sys
 import errno
 import stat
-import plugin_skelet
-from webdav import WebDav
+import abstract_backend
+from posix_backend import PosixBackend
 
 class Manager():
     def __init__(self):
         print("Manager: init")
         self.plugins = [
-            WebDav("/home/asd/src"),
-            WebDav("/home/asd/Pictures"),
+            PosixBackend("/home/asd/src"),
+            PosixBackend("/home/asd/Pictures"),
         ]
         self.root = "/home/asd/src"
         self.inodes = {1: self.root}
@@ -30,7 +30,7 @@ class Manager():
                 plugin.saveInode(inode, localInode)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
         if inode < 0:
             raise OSError
@@ -43,7 +43,7 @@ class Manager():
                 return plugin.getattr(plugin.getLocalByGlobalInode(inode))
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
         raise(OSError)
     def setattr(self, inode, attr):
@@ -53,7 +53,7 @@ class Manager():
                 return plugin.setattr(inode, attr)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
     def readdir(self, inode, off):
         print("Manager: readdir")
@@ -64,7 +64,7 @@ class Manager():
                 resultList = resultList + plugin.readdir(lInode, off)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
         return list(set(resultList))
     def opendir(self, inode):
@@ -81,7 +81,7 @@ class Manager():
                 return self.fh
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
         raise(OSError)
     def read(self, fh, offset, length):
@@ -93,7 +93,7 @@ class Manager():
                 data = plugin.read(lfh, offset, length)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
         return data              
     def write(self, fh, offset, buf):
@@ -104,7 +104,7 @@ class Manager():
                 return plugin.write(lfh, offset, buf)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
         raise(OSError)
     def release(self, fh):
@@ -115,7 +115,7 @@ class Manager():
                 plugin.release(lfh)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
 
     def mkdir(self, inode_p, name, mode):
@@ -126,7 +126,7 @@ class Manager():
                 plugin.mkdir(lInode_p, name, mode)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
     def rmdir(self, inode_p, name):
         print("Manager: rmdir")
@@ -136,7 +136,7 @@ class Manager():
                 plugin.rmdir(lInode_p, name)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
 
     def create(self, inode_parent, name, mode, flags):
@@ -148,7 +148,7 @@ class Manager():
                 exist = True
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
         if exist:
             raise(OSError)
@@ -158,7 +158,7 @@ class Manager():
                 return plugin.create(lInode_p, name, mode, flags)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
         raise(OSError)
 
@@ -170,7 +170,7 @@ class Manager():
                 plugin.unlink(lInode)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
     def rename(self, inode_p_old, name_old, inode_p_new, name_new):     
         print("Manager: rename")
@@ -181,7 +181,7 @@ class Manager():
                 plugin.rename(lInodeOld_p, name_old, lInodeNew_p, name_new)
             except OSError, e:
                 pass
-            except plugin_skelet.FileNotFoundError, e:
+            except abstract_backend.FileNotFoundError, e:
                 pass
     def statfs(self):
         print("Manager: statfs")
