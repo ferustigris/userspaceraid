@@ -52,4 +52,4 @@ class AddServiceDialog:
             "passwd": self.password.get_text()
         }
         self.save_callback(service, sobject)
-        pass
+        self.window.hide()

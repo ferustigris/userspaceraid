@@ -3,7 +3,6 @@
 
 import appindicator
 from applet import Applet 
-from settings import Settings 
 import gtk
 
 
