@@ -8,14 +8,14 @@ class Applet:
         print "SAVE", service
         self.accounts[service] = sobject
         self.settings.accounts = self.accounts
-        self.addMenuItem(service, self.editMountPoint)
-    def addMountPoint(self, w, buf):
-        self.dialog = AddServiceDialog(self.saveNewAccount)
-    def editMountPoint(self, w, buf):
+        self._addMenuItem(service, self.editAccount)
+    def addNewAccount(self, w, buf):
+        self._dialog = AddServiceDialog(self.saveNewAccount)
+    def editAccount(self, w, buf):
         pass
     def quitSoftRaid(self, w, buf):
         exit(0)
-    def addMenuItem(self, text, callback):
+    def _addMenuItem(self, text, callback):
         menu_items = gtk.MenuItem(text)
         menu_items.connect("activate", callback, None)
         self.menu.append(menu_items)
@@ -27,8 +27,8 @@ class Applet:
         # create a menu
         self.menu = gtk.Menu()
 
-        self.addMenuItem("Add service", self.addMountPoint)
-        self.addMenuItem("Quit SoftRaid", self.quitSoftRaid)
+        self._addMenuItem("Add service", self.addNewAccount)
+        self._addMenuItem("Quit SoftRaid", self.quitSoftRaid)
         for account_name in self.accounts:
             print "load ", account_name
-            self.addMenuItem(account_name, self.editMountPoint)
+            self._addMenuItem(account_name, self.editAccount)
