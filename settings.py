@@ -11,9 +11,16 @@ class Settings:
             os.path.exists(u'~/.config') or os.makedirs(u'~/.config')
             # default settings
             self.__dict__ = {
-                                'name': u'Charles',
-                                'second_name': u'Chaplin'
-                            }
+                "services": {
+                    "Ya.disk": {
+                        "path": "https://webdav.yandex.ru"
+                    },
+                    "Dropbox": {
+                        "path": "https://dav.dropdav.com"
+                    }
+                },
+                "accounts": {}
+            }
 
     def __setattr__(self, key, value):
         self.__dict__[key] = value

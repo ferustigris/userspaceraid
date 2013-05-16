@@ -5,8 +5,9 @@ import gobject
 import gtk
 
 class AddServiceDialog:
-    def __init__(self, save_callback):
+    def __init__(self, services, save_callback):
         self.save_callback = save_callback
+        self.services = services
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL);
         self.window.set_position(gtk.WIN_POS_CENTER);
@@ -17,7 +18,9 @@ class AddServiceDialog:
         layout.show()
 
         self.combo = gtk.Combo()
-        slist = [ "Ya.disk", "DropBox"]
+        slist = []
+        for service in self.services:
+            slist.append(service)
         self.combo.set_popdown_strings(slist)
         self.combo.show()
         layout.add(self.combo)
@@ -39,17 +42,17 @@ class AddServiceDialog:
         button_ok.connect("clicked", self.save, None)
         layout.add(button_ok)
     def save(self, w, buf):
-        path = ''
-        service = self.combo.entry.get_text() + ": " + self.username.get_text()
-        if service == "Ya.disk":
-            path = 'https://webdav.yandex.ru'
-        else:
-            path = 'https://dav.dropdav.com'
-        sobject = {
-            "service": service,
+        path = self.combo.entry.get_text()
+        service_name = self.combo.entry.get_text()
+        if service_name in self.services:
+            service = self.services[service_name]
+            path = service["path"]
+        account_object = {
+            "service": service_name,
             "path": path,
+            "mount_point": "/home/asd/raid",
             "login": self.username.get_text(),
             "passwd": self.password.get_text()
         }
-        self.save_callback(service, sobject)
+        self.save_callback(service_name + ": " + self.username.get_text(), account_object)
         self.window.hide()
