@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=User cloud raid
+Comment=Test your system and submit results to the Ubuntu Friendly project
+Encoding=UTF-8
+Exec=/usr/share/useraid/main.py
+Terminal=false
+Type=Application
+Icon=checkbox
+StartupNotify=true
+Categories=UserRaid;Application;System;
+X-Ubuntu-Gettext-Domain=checkbox

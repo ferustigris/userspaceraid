@@ -1,0 +1,7 @@
+Package: useraid
+Version: 1.0
+Section: misc
+Architecture: all
+Depends: python, fusedav
+Maintainer: Ferus Tigris <ferus.tigris@gmail.com>
+Description: Mount cloud storages by WebDav and agregate it to RAID-0
