@@ -50,7 +50,6 @@ class AddServiceDialog:
         account_object = {
             "service": service_name,
             "path": path,
-            "mount_point": "/home/asd/raid",
             "login": self.username.get_text(),
             "passwd": self.password.get_text()
         }

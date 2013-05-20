@@ -6,14 +6,15 @@ from settings import Settings
 class Applet:
     def saveNewAccount(self, service, account_object):
         print "SAVE", service
-        self.accounts[service] = account_object
-        self.settings.accounts = self.accounts
 
         self._addMenuItem(service, self.editAccount)
         
-        self.addNewServices(account_object)
-        self.mounter.mount(account_object)
-    def addNewServices(self, service_object):
+        self.addNewService(account_object)
+        self.mounter.mount(self.settings, account_object)
+
+        self.accounts[service] = account_object
+        self.settings.accounts = self.accounts
+    def addNewService(self, service_object):
         service_name = service_object["service"]
         if not service_name in self.services:
             self.services[service_name] = {
@@ -25,6 +26,7 @@ class Applet:
     def editAccount(self, w, buf):
         pass
     def quitSoftRaid(self, w, buf):
+        self.mounter.umount_all()
         exit(0)
     def _addMenuItem(self, text, callback):
         menu_items = gtk.MenuItem(text)
@@ -45,5 +47,5 @@ class Applet:
         self._addMenuItem("Quit SoftRaid", self.quitSoftRaid)
         for account_name in self.accounts:
             print "load ", account_name
-            mounter.mount(self.accounts[account_name])
+            mounter.mount(self.settings, self.accounts[account_name])
             self._addMenuItem(account_name, self.editAccount)
