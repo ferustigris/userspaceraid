@@ -8,9 +8,9 @@ from mounter import Mounter
 
 
 if __name__ == "__main__":
-    ind = appindicator.Indicator ("example-simple-client", "indicator-messages", appindicator.CATEGORY_APPLICATION_STATUS)
+    ind = appindicator.Indicator ("raid-client", "indicator-raid", appindicator.CATEGORY_APPLICATION_STATUS)
     ind.set_status (appindicator.STATUS_ACTIVE)
-    ind.set_attention_icon ("indicator-messages-new")	
+    ind.set_attention_icon ("indicator-raid-new")	
 
     mounter = Mounter()
 
